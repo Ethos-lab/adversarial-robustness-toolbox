@@ -22,68 +22,69 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
-
 from art.defences.detector.evasion.detector import Detector
-
-if TYPE_CHECKING:
-    # pylint: disable=C0412
-    import hashlib
-    from collections import Counter
+from multiprocessing import Pool
 
 logger = logging.getLogger(__name__)
 
+def apply_hash(arguments):
+    import hashlib
+    img = arguments['img']
+    idx = arguments['idx']
+    window_size = arguments['window_size']
+    return hashlib.sha256(img[idx:idx + window_size]).hexdigest()
 
 class BlacklightDetector(Detector):
     def __init__(
         self,
+        input_shape: Tuple[int, ...],
         window_size: int,
         num_hashes_keep: int,
-        round: int = 50,
+        num_rounds: int = 50,
         step_size:int = 1,
         workers:int = 5,
         salt=None,
         **kwargs
     ):
-        super().__init__(
-            window_size = window_size,
-            num_hashes_keep = num_hashes_keep,
-            round = round,
-            step_size = step_size,
-            workers = workers,
-            salt = None,
-            **kwargs
-        )
-    
-    def apply_hash(arguments):
-        img = arguments['img']
-        idx = arguments['idx']
-        window_size = arguments['window_size']
-        return hashlib.sha256(img[idx:idx + window_size]).hexdigest()
+        self.input_shape=input_shape
+        self.window_size=window_size
+        self.num_hashes_keep=num_hashes_keep
+        self.num_rounds=num_rounds
+        self.step_size=step_size
+        self.workers=workers
+        self.hash_dict={}
+        self.output={}
+        self.input_idx=0
+        self.pool=Pool(processes=workers)
+        if(salt != None):
+            self.salt = salt
+        else:
+            self.salt = np.random.rand(*self.input_shape) * 255.
 
-    def preprocess(self, array, round=1, normalized=True):
+    def preprocess(self, array, num_rounds=1, normalized=True):
         if(normalized): # input image normalized to [0,1]
             array = np.array(array) * 255.
         array = (array + self.salt) % 255.
         array = array.reshape(-1)
-        array = np.around(array / round, decimals=0) * round
+        array = np.around(array / num_rounds, decimals=0) * num_rounds
         array = array.astype(np.int16)
         return array
 
     def hash_image(self, img, preprocess=True):
         if preprocess:
-            img = self.preprocess(img, round)
+            img = self.preprocess(img, self.num_rounds)
         total_len = int(len(img))
         idx_ls = []
         for el in range(int((total_len - self.window_size + 1) / self.step_size)):
             idx_ls.append({"idx": el * self.step_size, "img": img, "window_size": self.window_size})
-        hash_list = self.pool.map(self.apply_hash, idx_ls)
+        hash_list = self.pool.map(apply_hash, idx_ls)
         hash_list = list(set(hash_list))
         hash_list = [r[::-1] for r in hash_list]
         hash_list.sort(reverse=True)
         return hash_list
 
     def check_image(self, hashes):
+        from collections import Counter
         sets = list(map(self.hash_dict.get, hashes))
         sets = [i for i in sets if i is not None]
         sets = [item for sublist in sets for item in sublist]
@@ -104,16 +105,12 @@ class BlacklightDetector(Detector):
                 self.hash_dict[el].append(self.input_idx)
         return cnt
 
-    def detect(self, x: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
+    def detect(self, input: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
         detected_output = []
-        if(self.salt == None):
-            self.salt = np.random.rand(*query.shape) * 255.
-
-        for query in x:
+        for query in input:
             detect_count = self.detect_image(query)
             if(detect_count > threshold):
                 detected_output.append(1)
             else:
                 detected_output.append(0)
-
         return detected_output

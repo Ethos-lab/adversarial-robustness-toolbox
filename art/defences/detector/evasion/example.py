@@ -1,5 +1,7 @@
 from keras.datasets import cifar10
-from stateful_defense import *
+from stateful_defense import StatefulDefense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D, Activation, InputLayer
 
 import numpy as np
 
@@ -37,19 +39,26 @@ perm = np.random.permutation(x_train.shape[0])
 
 benign_queries = x_train[perm[:1000],:,:,:]
 suspicious_queries = x_train[perm[-1],:,:,:] * np.random.normal(0, 0.05, (1000,) + x_train.shape[1:])
-
+print("0")
 detector = StatefulDefense(model = cifar10_encoder(), detector = "SimilarityDetector", K = 50, threshold=None, training_data=x_train, chunk_size=1000, weights_path="./cifar_encoder.h5")
-
+print("1")
 detector.process(benign_queries)
+print("2")
 
 detections = detector.get_detections()
+print("3")
+
 print("Num detections:", len(detections))
 print("Queries per detection:", detections)
 print("i-th query that caused detection:", detector.history)
 
 detector.clear_memory()
 detector.process(suspicious_queries)
+print("4")
+
 detections = detector.get_detections()
+print("5")
+
 print("Num detections:", len(detections))
 print("Queries per detection:", detections)
 print("i-th query that caused detection:", detector.history)

@@ -4,10 +4,11 @@ import sklearn.metrics.pairwise as pairwise
 from collections import OrderedDict
 
 class StatefulDefense(ModelDetector):
-	def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, weights_path="./encoder_1.h5"):
+    def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, weights_path="./encoder_1.h5", up_to_K=False):
         self.K = K
         self.threshold = threshold
         self.training_data = training_data
+        self.up_to_K = up_to_K
 
         super().__init__(model, detector)
 
@@ -15,10 +16,9 @@ class StatefulDefense(ModelDetector):
             raise ValueError("Must provide explicit detection threshold or training data to calculate threshold!")
 
         super()._init_encoder(weights_path)
-
         if self.training_data is not None:
             print("Explicit threshold not provided...calculating threshold for K = %d" % K)
-            _, self.thresholds = self.calculate_thresholds(self.training_data, self.K, self.encode, up_to_K=False)
+            _, self.thresholds = self.calculate_thresholds()
             self.threshold = self.thresholds[-1]
             print("K = %d; set threshold to: %f" % (K, self.threshold))
 
@@ -87,30 +87,30 @@ class StatefulDefense(ModelDetector):
 
         return epochs
 
-	def calculate_thresholds(training_data, K, encoder=lambda x: x, P=1000, up_to_K=False):
-	    data = encoder(training_data)
-	    
-	    distances = []
-	    for i in range(data.shape[0] // P):
-	        distance_mat = pairwise.pairwise_distances(data[i * P:(i+1) * P,:], Y=data)
-	        distance_mat = np.sort(distance_mat, axis=-1)
-	        distance_mat_K = distance_mat[:,:K]
-	        
-	        distances.append(distance_mat_K)
-	    distance_matrix = np.concatenate(distances, axis=0)
-	    
-	    start = 0 if up_to_K else K
+    def calculate_thresholds(self, P = 1000):
+        data = self.encode(self.training_data)
+        
+        distances = []
+        for i in range(data.shape[0] // P):
+            distance_mat = pairwise.pairwise_distances(data[i * P:(i+1) * P,:], Y=data)
+            distance_mat = np.sort(distance_mat, axis=-1)
+            distance_mat_K = distance_mat[:,:self.K]
+            
+            distances.append(distance_mat_K)
+        distance_matrix = np.concatenate(distances, axis=0)
+        
+        start = 0 if self.up_to_K else self.K
 
-	    THRESHOLDS = []
-	    K_S = []
-	    for k in range(start, K + 1):
-	        dist_to_k_neighbors = distance_matrix[:,:k+1]
-	        avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
-	        
-	        threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
-	        
-	        K_S.append(k)
-	        THRESHOLDS.append(threshold)
+        THRESHOLDS = []
+        K_S = []
+        for k in range(start, self.K + 1):
+            dist_to_k_neighbors = distance_matrix[:,:k+1]
+            avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
+            
+            threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
+            
+            K_S.append(k)
+            THRESHOLDS.append(threshold)
 
-	    return K_S, THRESHOLDS
+        return K_S, THRESHOLDS
 
