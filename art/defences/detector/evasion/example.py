@@ -30,23 +30,16 @@ def cifar10_encoder(encode_dim=256):
     model.add(Activation('linear', name='encoding'))
 
     return model
-
 (x_train, _), (x_test, y_test) = cifar10.load_data()
 
 x_test = x_test /  255.0
 x_train = x_train / 255.0
 perm = np.random.permutation(x_train.shape[0])
-
 benign_queries = x_train[perm[:1000],:,:,:]
 suspicious_queries = x_train[perm[-1],:,:,:] * np.random.normal(0, 0.05, (1000,) + x_train.shape[1:])
-print("0")
-detector = StatefulDefense(model = cifar10_encoder(), detector = "SimilarityDetector", K = 50, threshold=None, training_data=x_train, chunk_size=1000, weights_path="./cifar_encoder.h5")
-print("1")
+detector = StatefulDefense(model = cifar10_encoder(), detector = "SimilarityDetector", K = 50, threshold=None, training_data=x_train[:10000], chunk_size=1000, weights_path="./cifar_encoder.h5")
 detector.process(benign_queries)
-print("2")
-
 detections = detector.get_detections()
-print("3")
 
 print("Num detections:", len(detections))
 print("Queries per detection:", detections)
@@ -54,10 +47,7 @@ print("i-th query that caused detection:", detector.history)
 
 detector.clear_memory()
 detector.process(suspicious_queries)
-print("4")
-
 detections = detector.get_detections()
-print("5")
 
 print("Num detections:", len(detections))
 print("Queries per detection:", detections)

@@ -9,7 +9,7 @@ class StatefulDefense(ModelDetector):
         self.threshold = threshold
         self.training_data = training_data
         self.up_to_K = up_to_K
-
+        
         super().__init__(model, detector)
 
         if self.threshold is None and self.training_data is None:
@@ -32,7 +32,7 @@ class StatefulDefense(ModelDetector):
         self.detected_dists = [] # Tracks knn-dist that was detected
 
     def process(self, queries):
-        queries = super().encode(queries)
+        queries = self.encode(queries)
         for query in queries:
             self.process_query(query)
 
@@ -89,13 +89,12 @@ class StatefulDefense(ModelDetector):
 
     def calculate_thresholds(self, P = 1000):
         data = self.encode(self.training_data)
-        
         distances = []
+        print(data.shape[0])
         for i in range(data.shape[0] // P):
             distance_mat = pairwise.pairwise_distances(data[i * P:(i+1) * P,:], Y=data)
             distance_mat = np.sort(distance_mat, axis=-1)
             distance_mat_K = distance_mat[:,:self.K]
-            
             distances.append(distance_mat_K)
         distance_matrix = np.concatenate(distances, axis=0)
         
@@ -106,7 +105,6 @@ class StatefulDefense(ModelDetector):
         for k in range(start, self.K + 1):
             dist_to_k_neighbors = distance_matrix[:,:k+1]
             avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
-            
             threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
             
             K_S.append(k)
