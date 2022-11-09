@@ -95,7 +95,6 @@ class BlacklightDetector(Detector):
         return cnt
     
     def detect_image(self, img):
-        self.input_idx += 1
         hashes = self.hash_image(img)[:self.num_hashes_keep]
         cnt = self.check_image(hashes)
         for el in hashes:
@@ -105,9 +104,10 @@ class BlacklightDetector(Detector):
                 self.hash_dict[el].append(self.input_idx)
         return cnt
 
-    def detect(self, input: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
+    def detect(self, input_queries: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
         detected_output = []
-        for query in input:
+        for query in input_queries:
+            self.input_idx += 1
             detect_count = self.detect_image(query)
             if(detect_count > threshold):
                 detected_output.append(1)
