@@ -28,7 +28,7 @@ import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.classification.keras import KerasClassifier
-from art.defences.detector.evasion import BinaryInputDetector, BinaryActivationDetector
+from art.defences.detector.evasion.binary_detector import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_image_classifier_kr
@@ -94,8 +94,8 @@ class TestBinaryInputDetector(unittest.TestCase):
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
-        test_detection = np.argmax(detector.predict(x_test), axis=1)
-        test_adv_detection = np.argmax(detector.predict(x_test_adv), axis=1)
+        test_detection = np.argmax(detector.detect(x_test), axis=1)
+        test_adv_detection = np.argmax(detector.detect(x_test_adv), axis=1)
 
         # Assert there is at least one true positive and negative:
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
@@ -159,13 +159,13 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create detector and train it.
         # Detector consider activations at layer=0:
         detector = BinaryActivationDetector(
-            classifier=classifier, detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False), layer=0
+            model=classifier, detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False), layer=0
         )
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
-        test_detection = np.argmax(detector.predict(x_test), axis=1)
-        test_adv_detection = np.argmax(detector.predict(x_test_adv), axis=1)
+        test_detection = np.argmax(detector.detect(x_test), axis=1)
+        test_adv_detection = np.argmax(detector.detect(x_test_adv), axis=1)
 
         # Assert there is at least one true positive and negative
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
