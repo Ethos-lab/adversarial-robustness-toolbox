@@ -56,7 +56,7 @@ class StatefulDefense(ModelDetector):
         self.detected_dists = [] # Tracks knn-dist that was detected
 
     def process(self, queries):
-        queries = self.encode(queries)
+        queries = self.detector.encode(queries)
         for query in queries:
             self.process_query(query)
 
@@ -112,7 +112,7 @@ class StatefulDefense(ModelDetector):
         return epochs
 
     def calculate_thresholds(self, P = 1000):
-        data = self.encode(self.training_data)
+        data = self.detector.encode(self.training_data)
         distances = []
         print(data.shape[0])
         for i in range(data.shape[0] // P):
