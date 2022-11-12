@@ -54,6 +54,11 @@ class StatefulDefense(ModelDetector):
         self.history = [] # Tracks number of queries (t) when attack was detected
         self.history_by_attack = []
         self.detected_dists = [] # Tracks knn-dist that was detected
+        self.detections = []
+
+    def detect(self, queries: np.ndarray) -> np.ndarray:
+        self.process(queries)
+        return self.detections
 
     def process(self, queries):
         queries = self.detector.encode(queries)
@@ -65,6 +70,7 @@ class StatefulDefense(ModelDetector):
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
             self.num_queries += 1
+            self.detections.append(0)
             return False
 
         k = self.K
@@ -90,14 +96,14 @@ class StatefulDefense(ModelDetector):
             self.memory.append(np.stack(self.buffer, axis=0))
             self.buffer = []
 
-        # print("[debug]", num_queries_so_far, k_avg_dist)
         is_attack = k_avg_dist < self.threshold
         if is_attack:
+            self.detections.append(1)
             self.history.append(self.num_queries)
-            # self.history_by_attack.append(num_queries_so_far + 1)
             self.detected_dists.append(k_avg_dist)
-            # print("[encoder] Attack detected:", str(self.history), str(self.detected_dists))
             self.clear_memory()
+        else:
+            self.detections.append(0)
 
     def clear_memory(self):
         self.buffer = []
@@ -108,7 +114,6 @@ class StatefulDefense(ModelDetector):
         epochs = []
         for i in range(len(history) - 1):
             epochs.append(history[i + 1] - history[i])
-
         return epochs
 
     def calculate_thresholds(self, P = 1000):
