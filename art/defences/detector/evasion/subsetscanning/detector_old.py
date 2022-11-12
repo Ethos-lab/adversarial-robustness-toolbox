@@ -61,10 +61,14 @@ class SubsetScanningDetector(ModelDetector):
         :param layer: The layer from which to extract activations to perform scan.
         :param verbose: Show progress bars.
         """
-        super().__init__(
-            model=None,
-            detector=classifier
-        )
+        super().__init__(classifier)
+        # super().__init__(
+        #     model=None,
+        #     clip_values=classifier.clip_values,
+        #     channels_first=classifier.channels_first,
+        #     preprocessing_defences=classifier.preprocessing_defences,
+        #     preprocessing=classifier.preprocessing,
+        # )
         self.detector = classifier
         self.nb_classes = self.detector.nb_classes
         self.bgd_data = bgd_data

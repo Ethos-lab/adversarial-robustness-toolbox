@@ -28,7 +28,7 @@ import sklearn.metrics.pairwise as pairwise
 from collections import OrderedDict
 
 class StatefulDefense(ModelDetector):
-    def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, weights_path="./encoder_1.h5", up_to_K=False):
+    def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, up_to_K=False):
         self.K = K
         self.threshold = threshold
         self.training_data = training_data
@@ -39,7 +39,7 @@ class StatefulDefense(ModelDetector):
         if self.threshold is None and self.training_data is None:
             raise ValueError("Must provide explicit detection threshold or training data to calculate threshold!")
 
-        super()._init_encoder(weights_path)
+        # super()._init_encoder(weights_path)
         if self.training_data is not None:
             print("Explicit threshold not provided...calculating threshold for K = %d" % K)
             _, self.thresholds = self.calculate_thresholds()

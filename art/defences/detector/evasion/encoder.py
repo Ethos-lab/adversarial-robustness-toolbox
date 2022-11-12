@@ -20,24 +20,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-import numpy as np
 
-from art.defences.detector.evasion.detector import Detector
+class L2Detector():
+    def __init__(self):
+        self.encode = lambda x : x.reshape((x.shape[0], -1))
 
-
-class ModelDetector(Detector):
-    def __init__(self, model, detector):
-        self.model = model
-        self.detector = detector
-
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
-        raise NotImplementedError
-
-
-    def fit(self):
-        raise NotImplementedError
-
-
-    def loss_gradient(self):
-        raise NotImplementedError
-
+class SimilarityDetector():
+    def __init__(self, model, weights_path):
+        encoder = model
+        encoder.load_weights(weights_path, by_name=True)
+        self.encoder = encoder
+        self.encode = lambda x : encoder.predict(x)
