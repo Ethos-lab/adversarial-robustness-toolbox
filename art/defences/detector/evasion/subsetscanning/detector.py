@@ -31,7 +31,6 @@ from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
-from art.defences.detector.evasion.model_detector import ModelDetector
 
 
 if TYPE_CHECKING:
@@ -41,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(ModelDetector):
+class SubsetScanningDetector(ClassifierNeuralNetwork):
     """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 
@@ -63,7 +62,10 @@ class SubsetScanningDetector(ModelDetector):
         """
         super().__init__(
             model=None,
-            detector=classifier
+            clip_values=classifier.clip_values,
+            channels_first=classifier.channels_first,
+            preprocessing_defences=classifier.preprocessing_defences,
+            preprocessing=classifier.preprocessing,
         )
         self.detector = classifier
         self.nb_classes = self.detector.nb_classes

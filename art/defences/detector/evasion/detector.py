@@ -25,8 +25,9 @@ import numpy as np
 from abc import ABC
 
 class Detector(ABC):
-    # def __init__(self):
-    #     raise NotImplementedError
+    """
+    Detector class providing common interface to the detector implementations in ART.
+    """
     
     def __init__(
         self,
@@ -36,4 +37,11 @@ class Detector(ABC):
         super().__init__(*args, **kwargs)  # type: ignore
 
     def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+        """
+        Performs the detection on the inputs and return an array of boolean depicting
+        clean values(0) and adversarial values(1).
+
+        :param x: Inputs to the detector.
+        :param batch_size: Size of batches.
+        """
         raise NotImplementedError

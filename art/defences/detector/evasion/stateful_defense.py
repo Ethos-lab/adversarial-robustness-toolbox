@@ -22,13 +22,29 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
-
 from art.defences.detector.evasion.model_detector import ModelDetector
 import sklearn.metrics.pairwise as pairwise
 from collections import OrderedDict
 
 class StatefulDefense(ModelDetector):
+    """
+    Implementation of the paper titled "Stateful Detection of Black-Box Adversarial Attacks"
+    | Paper link: https://arxiv.org/pdf/1907.05587.pdf
+    """
+
+
     def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, up_to_K=False):
+        """
+        Create a `StatefulDefense` instance which is used to the detect the presence of adversarial samples.
+
+        :param model: The estimator model to be used for detection
+        :param detector: The encoder needed to compute the detection
+        :param K: Number of neighbors
+        :param threshold: Limit for deciding if the input is clean or adversarial
+        :param training_data: Input training data
+        :param chunk_size: Size of chunks of input queries to be processed at once
+        :param up_to_K: Boolean flag to decide if upper limit of K neighbors to be considered
+        """
         self.K = K
         self.threshold = threshold
         self.training_data = training_data
@@ -56,17 +72,26 @@ class StatefulDefense(ModelDetector):
         self.detected_dists = [] # Tracks knn-dist that was detected
         self.detections = []
 
+
     def detect(self, queries: np.ndarray) -> np.ndarray:
+        """
+        Perform the detections on the input queries and return boolean array.
+        This returns True(1) if the input is adversarial, else return False(0) if clean.
+        """
         self.process(queries)
         return self.detections
 
+
     def process(self, queries):
+        """
+        Encode the input queries and process each of them
+        """
         queries = self.detector.encode(queries)
         for query in queries:
             self.process_query(query)
 
-    def process_query(self, query):
 
+    def process_query(self, query):
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
             self.num_queries += 1
@@ -105,9 +130,14 @@ class StatefulDefense(ModelDetector):
         else:
             self.detections.append(0)
 
+
     def clear_memory(self):
+        """
+        Emptying out the memory buffer
+        """
         self.buffer = []
         self.memory = []
+
 
     def get_detections(self):
         history = self.history
@@ -116,7 +146,11 @@ class StatefulDefense(ModelDetector):
             epochs.append(history[i + 1] - history[i])
         return epochs
 
+
     def calculate_thresholds(self, P = 1000):
+        """
+        Compute thresholds for the given training data and number of neighbors
+        """
         data = self.detector.encode(self.training_data)
         distances = []
         print(data.shape[0])
@@ -140,4 +174,3 @@ class StatefulDefense(ModelDetector):
             THRESHOLDS.append(threshold)
 
         return K_S, THRESHOLDS
-
