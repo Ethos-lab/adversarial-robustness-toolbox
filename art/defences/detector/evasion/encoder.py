@@ -15,7 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Detector modules needed to be used to detect adversarial inputs for stateful defense
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -25,9 +27,11 @@ class L2Detector():
     def __init__(self):
         self.encode = lambda x : x.reshape((x.shape[0], -1))
 
+
 class SimilarityDetector():
-    def __init__(self, model, weights_path):
+    def __init__(self, model, weights_path=None):
         encoder = model
-        encoder.load_weights(weights_path, by_name=True)
+        if weights_path is not None:
+            encoder.load_weights(weights_path, by_name=True)
         self.encoder = encoder
         self.encode = lambda x : encoder.predict(x)
