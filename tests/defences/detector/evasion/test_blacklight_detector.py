@@ -50,12 +50,7 @@ def test_blacklight_detector_pytorch_returns_nonempty_results(get_mnist_data):
     x_test, _ = get_mnist_data
 
     blacklight_detector = BlacklightDetector(
-        input_shape=x_test[0].shape,
-        window_size=20,
-        num_hashes_keep=50,
-        num_rounds=50,
-        step_size=1,
-        workers=5
+        input_shape=x_test[0].shape, window_size=20, num_hashes_keep=50, num_rounds=50, step_size=1, workers=5
     )
 
     detected_results = blacklight_detector.detect(x=x_test[:100], threshold=25)
@@ -71,13 +66,8 @@ def test_blacklight_detector_pytorch_returns_boolean_values(get_mnist_data):
     x_test, _ = get_mnist_data
 
     blacklight_detector = BlacklightDetector(
-        input_shape=x_test[0].shape,
-        window_size=20,
-        num_hashes_keep=50,
-        num_rounds=50,
-        step_size=1,
-        workers=5
+        input_shape=x_test[0].shape, window_size=20, num_hashes_keep=50, num_rounds=50, step_size=1, workers=5
     )
 
     detected_results = blacklight_detector.detect(x=x_test[:100], threshold=25)
-    assert all(detection in {0,1} for detection in set(detected_results))
+    assert all(detection in {0, 1} for detection in set(detected_results))

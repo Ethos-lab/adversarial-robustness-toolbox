@@ -47,31 +47,30 @@ def cifar10_encoder(encode_dim=256):
     Create cifar10 encoder model
     """
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, \
-        MaxPooling2D, Activation
+    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation
 
     model = Sequential()
 
-    model.add(Conv2D(32, (3, 3), padding='same', name='conv2d_1', input_shape=(32, 32, 3)))
-    model.add(Activation('relu', name='activation_1'))
-    model.add(Conv2D(32, (3, 3), name='conv2d_2'))
-    model.add(Activation('relu', name='activation_2'))
-    model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_1'))
-    model.add(Dropout(0.25, name='dropout_1'))
+    model.add(Conv2D(32, (3, 3), padding="same", name="conv2d_1", input_shape=(32, 32, 3)))
+    model.add(Activation("relu", name="activation_1"))
+    model.add(Conv2D(32, (3, 3), name="conv2d_2"))
+    model.add(Activation("relu", name="activation_2"))
+    model.add(MaxPooling2D(pool_size=(2, 2), name="max_pooling2d_1"))
+    model.add(Dropout(0.25, name="dropout_1"))
 
-    model.add(Conv2D(64, (3, 3), padding='same', name='conv2d_3'))
-    model.add(Activation('relu', name='activation_3'))
-    model.add(Conv2D(64, (3, 3), name='conv2d_4'))
-    model.add(Activation('relu', name='activation_4'))
-    model.add(MaxPooling2D(pool_size=(2, 2), name='max_pooling2d_2'))
-    model.add(Dropout(0.25, name='dropout_2'))
+    model.add(Conv2D(64, (3, 3), padding="same", name="conv2d_3"))
+    model.add(Activation("relu", name="activation_3"))
+    model.add(Conv2D(64, (3, 3), name="conv2d_4"))
+    model.add(Activation("relu", name="activation_4"))
+    model.add(MaxPooling2D(pool_size=(2, 2), name="max_pooling2d_2"))
+    model.add(Dropout(0.25, name="dropout_2"))
 
-    model.add(Flatten(name='flatten_1'))
-    model.add(Dense(512, name='dense_1'))
-    model.add(Activation('relu', name='activation_5'))
-    model.add(Dropout(0.5, name='dropout_3'))
-    model.add(Dense(encode_dim, name='dense_encode'))
-    model.add(Activation('linear', name='encoding'))
+    model.add(Flatten(name="flatten_1"))
+    model.add(Dense(512, name="dense_1"))
+    model.add(Activation("relu", name="activation_5"))
+    model.add(Dropout(0.5, name="dropout_3"))
+    model.add(Dense(encode_dim, name="dense_encode"))
+    model.add(Activation("linear", name="encoding"))
 
     return model
 
@@ -85,17 +84,12 @@ def test_stateful_detector_tensorflow_queries_returns_nonempty(get_cifar10_data)
     x_test, _ = get_cifar10_data
     x_test = x_test / 255.0
     perm = np.random.permutation(x_test.shape[0])
-    queries = x_test[perm[-1],:,:,:] * np.random.normal(0, 0.05, (1000,) + x_test.shape[1:])
+    queries = x_test[perm[-1], :, :, :] * np.random.normal(0, 0.05, (1000,) + x_test.shape[1:])
 
     cifar10_model = cifar10_encoder()
     encoder = SimilarityDetector(model=cifar10_model)
     stateful_detector = StatefulDefense(
-        model=cifar10_model,
-        detector=encoder,
-        k=50,
-        threshold=None,
-        training_data=x_test,
-        chunk_size=1000
+        model=cifar10_model, detector=encoder, k=50, threshold=None, training_data=x_test, chunk_size=1000
     )
     detections = stateful_detector.detect(queries)
 
@@ -112,17 +106,13 @@ def test_stateful_detector_tensorflow_queries_returns_boolean_values(get_cifar10
     print(x_test.shape)
     x_test = x_test / 255.0
     perm = np.random.permutation(x_test.shape[0])
-    queries = x_test[perm[-1],:,:,:] * np.random.normal(0, 0.05, (1000,) + x_test.shape[1:])
+    queries = x_test[perm[-1], :, :, :] * np.random.normal(0, 0.05, (1000,) + x_test.shape[1:])
 
     cifar10_model = cifar10_encoder()
     encoder = SimilarityDetector(model=cifar10_model)
     stateful_detector = StatefulDefense(
-        model=cifar10_model,
-        detector=encoder,
-        k=50, threshold=None,
-        training_data=x_test,
-        chunk_size=1000
+        model=cifar10_model, detector=encoder, k=50, threshold=None, training_data=x_test, chunk_size=1000
     )
     detections = stateful_detector.detect(queries)
 
-    assert all(detection in {0,1} for detection in set(detections))
+    assert all(detection in {0, 1} for detection in set(detections))

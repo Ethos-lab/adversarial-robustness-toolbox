@@ -35,10 +35,11 @@ def apply_hash(arguments):
     Return the hash value for the image argument using SHA256 Algorithm
     """
     import hashlib
-    img = arguments['img']
-    idx = arguments['idx']
-    window_size = arguments['window_size']
-    return hashlib.sha256(img[idx:idx + window_size]).hexdigest()
+
+    img = arguments["img"]
+    idx = arguments["idx"]
+    window_size = arguments["window_size"]
+    return hashlib.sha256(img[idx : idx + window_size]).hexdigest()
 
 
 class BlacklightDetector(Detector):
@@ -54,8 +55,8 @@ class BlacklightDetector(Detector):
         window_size: int,
         num_hashes_keep: int,
         num_rounds: int = 50,
-        step_size:int = 1,
-        workers:int = 5,
+        step_size: int = 1,
+        workers: int = 5,
         salt=None,
         **kwargs
     ):
@@ -82,15 +83,15 @@ class BlacklightDetector(Detector):
         if salt is not None:
             self.salt = salt
         else:
-            self.salt = np.random.rand(*self.input_shape) * 255.
+            self.salt = np.random.rand(*self.input_shape) * 255.0
 
     def preprocess(self, array, num_rounds=1, normalized=True):
         """
         Preprocessing the array of inputs
         """
         if normalized:  # input image normalized to [0,1]
-            array = np.array(array) * 255.
-        array = (array + self.salt) % 255.
+            array = np.array(array) * 255.0
+        array = (array + self.salt) % 255.0
         array = array.reshape(-1)
         array = np.around(array / num_rounds, decimals=0) * num_rounds
         array = array.astype(np.int16)
@@ -117,6 +118,7 @@ class BlacklightDetector(Detector):
         Check if the image is already in the hashes computed, if yes, return the count
         """
         from collections import Counter
+
         sets = list(map(self.hash_dict.get, hashes))
         sets = [i for i in sets if i is not None]
         sets = [item for sublist in sets for item in sublist]
@@ -130,7 +132,7 @@ class BlacklightDetector(Detector):
         """
         Detect and find the number of occurrences for an input image
         """
-        hashes = self.hash_image(img)[:self.num_hashes_keep]
+        hashes = self.hash_image(img)[: self.num_hashes_keep]
         cnt = self.check_image(hashes)
         for i in hashes:
             if i not in self.hash_dict:
@@ -144,7 +146,7 @@ class BlacklightDetector(Detector):
         Return an array of detections on the input queries. This returns True(1) if the
         count is greater than the threshold, else return False(0)
         """
-        threshold = kwargs.get('threshold')
+        threshold = kwargs.get("threshold")
         detected_output = []
         for query in x:
             self.input_idx += 1

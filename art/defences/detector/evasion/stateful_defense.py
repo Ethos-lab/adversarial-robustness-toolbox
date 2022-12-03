@@ -56,10 +56,10 @@ class StatefulDefense(ModelDetector):
 
         # super()._init_encoder(weights_path)
         if self.training_data is not None:
-            print(f'Explicit threshold not provided...calculating threshold for k = {k}')
+            print(f"Explicit threshold not provided...calculating threshold for k = {k}")
             _, self.thresholds = self.calculate_thresholds()
             self.threshold = self.thresholds[-1]
-            print(f'k = {k}; set threshold to: {self.threshold}')
+            print(f"k = {k}; set threshold to: {self.threshold}")
 
         self.num_queries = 0
         self.buffer = []
@@ -154,9 +154,9 @@ class StatefulDefense(ModelDetector):
         distances = []
         print(data.shape[0])
         for i in range(data.shape[0] // pair_count):
-            distance_mat = pairwise.pairwise_distances(data[i * pair_count:(i + 1) * pair_count,:], Y=data)
+            distance_mat = pairwise.pairwise_distances(data[i * pair_count : (i + 1) * pair_count, :], Y=data)
             distance_mat = np.sort(distance_mat, axis=-1)
-            distance_mat_k = distance_mat[:,:self.k]
+            distance_mat_k = distance_mat[:, : self.k]
             distances.append(distance_mat_k)
         distance_matrix = np.concatenate(distances, axis=0)
 
@@ -165,7 +165,7 @@ class StatefulDefense(ModelDetector):
         thresholds = []
         k_count = []
         for k in range(start, self.k + 1):
-            dist_to_k_neighbors = distance_matrix[:,:k + 1]
+            dist_to_k_neighbors = distance_matrix[:, : k + 1]
             avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
             threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
 

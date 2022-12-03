@@ -57,10 +57,7 @@ class BinaryInputDetector(ModelDetector):
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
         """
-        super().__init__(
-            model=None,
-            detector=detector
-        )
+        super().__init__(model=None, detector=detector)
         self.detector = detector
         self.nb_classes = self.detector.nb_classes
 
@@ -208,10 +205,7 @@ class BinaryActivationDetector(ModelDetector):
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :param layer: Layer for computing the activations to use for training the detector.
         """
-        super().__init__(
-            model=model,
-            detector=detector
-        )
+        super().__init__(model=model, detector=detector)
         self.classifier = model
         self.detector = detector
         self.nb_classes = self.detector.nb_classes
