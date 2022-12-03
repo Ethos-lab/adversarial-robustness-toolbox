@@ -26,8 +26,8 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.defences.detector.evasion.model_detector import ModelDetector
 
 if TYPE_CHECKING:
@@ -111,10 +111,16 @@ class BinaryInputDetector(ModelDetector):
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
+        """
+        :return: input shape of the detector
+        """
         return self.detector.input_shape
 
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
+        """
+        :return: clip values for the detector
+        """
         return self.detector.clip_values
 
     @property
@@ -273,10 +279,16 @@ class BinaryActivationDetector(ModelDetector):
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
+        """
+        :return: input shape of the detector
+        """
         return self.detector.input_shape
 
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
+        """
+        :return: clip values for the detector
+        """
         return self.detector.clip_values
 
     @property
@@ -288,6 +300,9 @@ class BinaryActivationDetector(ModelDetector):
 
     @property
     def layer_names(self) -> List[str]:
+        """
+        :return: list of the layer names
+        """
         raise NotImplementedError
 
     def class_gradient(  # pylint: disable=W0221

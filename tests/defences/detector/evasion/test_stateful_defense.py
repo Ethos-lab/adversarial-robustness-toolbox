@@ -35,17 +35,20 @@ def get_cifar10_data():
     """
     Get CIFAR10 data and return {data, labels}
     """
-    NB_TEST = 100
+    nb_test = 100
     (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
-    x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
     y_test = np.argmax(y_test, axis=1)
     return x_test, y_test
 
 
 def cifar10_encoder(encode_dim=256):
+    """
+    Create cifar10 encoder model
+    """
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D,
-    MaxPooling2D, GlobalAveragePooling2D, Activation, InputLayer
+    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, \
+        MaxPooling2D, Activation
 
     model = Sequential()
 
@@ -74,10 +77,12 @@ def cifar10_encoder(encode_dim=256):
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_blacklight_detector_tensorflow_queries_returns_nonempty(get_cifar10_data):
+def test_stateful_detector_tensorflow_queries_returns_nonempty(get_cifar10_data):
+    """
+    Test stateful detector to return nonempty array
+    """
     # Get CIFAR10
-    x_test, y_test = get_cifar10_data
-    print(x_test.shape)
+    x_test, _ = get_cifar10_data
     x_test = x_test / 255.0
     perm = np.random.permutation(x_test.shape[0])
     queries = x_test[perm[-1],:,:,:] * np.random.normal(0, 0.05, (1000,) + x_test.shape[1:])
@@ -87,7 +92,7 @@ def test_blacklight_detector_tensorflow_queries_returns_nonempty(get_cifar10_dat
     stateful_detector = StatefulDefense(
         model=cifar10_model,
         detector=encoder,
-        K=50,
+        k=50,
         threshold=None,
         training_data=x_test,
         chunk_size=1000
@@ -98,9 +103,12 @@ def test_blacklight_detector_tensorflow_queries_returns_nonempty(get_cifar10_dat
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_blacklight_detector_tensorflow_queries_returns_boolean_values(get_cifar10_data):
+def test_stateful_detector_tensorflow_queries_returns_boolean_values(get_cifar10_data):
+    """
+    Test stateful detector to return array with only 0 or 1
+    """
     # Get CIFAR10
-    x_test, y_test = get_cifar10_data
+    x_test, _ = get_cifar10_data
     print(x_test.shape)
     x_test = x_test / 255.0
     perm = np.random.permutation(x_test.shape[0])
@@ -111,7 +119,7 @@ def test_blacklight_detector_tensorflow_queries_returns_boolean_values(get_cifar
     stateful_detector = StatefulDefense(
         model=cifar10_model,
         detector=encoder,
-        K=50, threshold=None,
+        k=50, threshold=None,
         training_data=x_test,
         chunk_size=1000
     )

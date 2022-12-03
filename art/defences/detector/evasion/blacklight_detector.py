@@ -15,15 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Module for blacklight detector implementation in ART
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
+from multiprocessing import Pool
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Tuple
 import numpy as np
 
 from art.defences.detector.evasion.detector import Detector
-from multiprocessing import Pool
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class BlacklightDetector(Detector):
         :param num_rounds: Number of rounds for computing the hashes
         :param workers: Size of worker threads pools to run the detector
         """
-
+        super().__init__()
         self.input_shape = input_shape
         self.window_size = window_size
         self.num_hashes_keep = num_hashes_keep
@@ -86,7 +88,7 @@ class BlacklightDetector(Detector):
         """
         Preprocessing the array of inputs
         """
-        if(normalized):  # input image normalized to [0,1]
+        if normalized:  # input image normalized to [0,1]
             array = np.array(array) * 255.
         array = (array + self.salt) % 255.
         array = array.reshape(-1)
@@ -102,8 +104,8 @@ class BlacklightDetector(Detector):
             img = self.preprocess(img, self.num_rounds)
         total_len = int(len(img))
         idx_ls = []
-        for el in range(int((total_len - self.window_size + 1) / self.step_size)):
-            idx_ls.append({"idx": el * self.step_size, "img": img, "window_size": self.window_size})
+        for i in range(int((total_len - self.window_size + 1) / self.step_size)):
+            idx_ls.append({"idx": i * self.step_size, "img": img, "window_size": self.window_size})
         hash_list = self.pool.map(apply_hash, idx_ls)
         hash_list = list(set(hash_list))
         hash_list = [r[::-1] for r in hash_list]
@@ -130,23 +132,24 @@ class BlacklightDetector(Detector):
         """
         hashes = self.hash_image(img)[:self.num_hashes_keep]
         cnt = self.check_image(hashes)
-        for el in hashes:
-            if el not in self.hash_dict:
-                self.hash_dict[el] = [self.input_idx]
+        for i in hashes:
+            if i not in self.hash_dict:
+                self.hash_dict[i] = [self.input_idx]
             else:
-                self.hash_dict[el].append(self.input_idx)
+                self.hash_dict[i].append(self.input_idx)
         return cnt
 
-    def detect(self, input_queries: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
+    def detect(self, x: np.ndarray, batch_size: int = 1, **kwargs) -> np.ndarray:
         """
         Return an array of detections on the input queries. This returns True(1) if the
         count is greater than the threshold, else return False(0)
         """
+        threshold = kwargs.get('threshold')
         detected_output = []
-        for query in input_queries:
+        for query in x:
             self.input_idx += 1
             detect_count = self.detect_image(query)
-            if(detect_count > threshold):
+            if detect_count > threshold:
                 detected_output.append(1)
             else:
                 detected_output.append(0)

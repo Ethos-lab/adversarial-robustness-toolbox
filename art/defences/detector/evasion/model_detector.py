@@ -15,11 +15,11 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Detector implementation for whitebox detection
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.defences.detector.evasion.detector import Detector
@@ -37,10 +37,11 @@ class ModelDetector(Detector):
         :param model: The estimator model to be used for detection
         :param detector: The encoder needed to compute the detection
         """
+        super().__init__()
         self.model = model
         self.detector = detector
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def detect(self, x: np.ndarray, batch_size: int = 1, **kwargs) -> np.ndarray:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -51,7 +52,7 @@ class ModelDetector(Detector):
         """
         raise NotImplementedError
 
-    def fit(self):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
         """
         Fit the detector using training data.
 

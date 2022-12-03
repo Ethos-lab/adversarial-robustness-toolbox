@@ -15,14 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Interface for detector implementations in ART
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-import numpy as np
-
 from abc import ABC
+import numpy as np
 
 
 class Detector(ABC):
@@ -37,7 +36,7 @@ class Detector(ABC):
     ) -> None:
         super().__init__(*args, **kwargs)  # type: ignore
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def detect(self, x: np.ndarray, batch_size: int = 1, **kwargs) -> np.ndarray:
         """
         Performs the detection on the inputs and return an array of boolean depicting
         clean values(0) and adversarial values(1).

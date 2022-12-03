@@ -20,16 +20,19 @@ Detector modules needed to be used to detect adversarial inputs for stateful def
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-
 
 class L2Detector():
+    """
+    Initialize object for L2Detector
+    """
     def __init__(self):
         self.encode = lambda x : x.reshape((x.shape[0], -1))
 
 
 class SimilarityDetector():
+    """
+    Initialize object for SimilarityDetector
+    """
     def __init__(self, model, weights_path=None):
         encoder = model
         if weights_path is not None:

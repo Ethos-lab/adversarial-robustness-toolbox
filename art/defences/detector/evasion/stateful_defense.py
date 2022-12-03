@@ -15,16 +15,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Stateful detector
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
+from sklearn.metrics import pairwise
 
 from art.defences.detector.evasion.model_detector import ModelDetector
-import sklearn.metrics.pairwise as pairwise
-from collections import OrderedDict
 
 
 class StatefulDefense(ModelDetector):
@@ -33,22 +32,22 @@ class StatefulDefense(ModelDetector):
     | Paper link: https://arxiv.org/pdf/1907.05587.pdf
     """
 
-    def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, up_to_K=False):
+    def __init__(self, model, detector, k, threshold=None, training_data=None, chunk_size=1000, up_to_k=False):
         """
         Create a `StatefulDefense` instance which is used to the detect the presence of adversarial samples.
 
         :param model: The estimator model to be used for detection
         :param detector: The encoder needed to compute the detection
-        :param K: Number of neighbors
+        :param k: Number of neighbors
         :param threshold: Limit for deciding if the input is clean or adversarial
         :param training_data: Input training data
         :param chunk_size: Size of chunks of input queries to be processed at once
-        :param up_to_K: Boolean flag to decide if upper limit of K neighbors to be considered
+        :param up_to_k: Boolean flag to decide if upper limit of K neighbors to be considered
         """
-        self.K = K
+        self.k = k
         self.threshold = threshold
         self.training_data = training_data
-        self.up_to_K = up_to_K
+        self.up_to_k = up_to_k
 
         super().__init__(model, detector)
 
@@ -57,10 +56,10 @@ class StatefulDefense(ModelDetector):
 
         # super()._init_encoder(weights_path)
         if self.training_data is not None:
-            print("Explicit threshold not provided...calculating threshold for K = %d" % K)
+            print(f'Explicit threshold not provided...calculating threshold for k = {k}')
             _, self.thresholds = self.calculate_thresholds()
             self.threshold = self.thresholds[-1]
-            print("K = %d; set threshold to: %f" % (K, self.threshold))
+            print(f'k = {k}; set threshold to: {self.threshold}')
 
         self.num_queries = 0
         self.buffer = []
@@ -72,12 +71,12 @@ class StatefulDefense(ModelDetector):
         self.detected_dists = []  # Tracks knn-dist that was detected
         self.detections = []
 
-    def detect(self, queries: np.ndarray) -> np.ndarray:
+    def detect(self, x: np.ndarray, batch_size: int = 1, **kwargs) -> np.ndarray:
         """
         Perform the detections on the input queries and return boolean array.
         This returns True(1) if the input is adversarial, else return False(0) if clean.
         """
-        self.process(queries)
+        self.process(x)
         return self.detections
 
     def process(self, queries):
@@ -89,13 +88,16 @@ class StatefulDefense(ModelDetector):
             self.process_query(query)
 
     def process_query(self, query):
-        if len(self.memory) == 0 and len(self.buffer) < self.K:
+        """
+        Process each query
+        """
+        if len(self.memory) == 0 and len(self.buffer) < self.k:
             self.buffer.append(query)
             self.num_queries += 1
             self.detections.append(0)
-            return False
+            return
 
-        k = self.K
+        k = self.k
         all_dists = []
 
         if len(self.buffer) > 0:
@@ -135,36 +137,39 @@ class StatefulDefense(ModelDetector):
         self.memory = []
 
     def get_detections(self):
+        """
+        find the detections
+        """
         history = self.history
         epochs = []
         for i in range(len(history) - 1):
             epochs.append(history[i + 1] - history[i])
         return epochs
 
-    def calculate_thresholds(self, P=1000):
+    def calculate_thresholds(self, pair_count=1000):
         """
         Compute thresholds for the given training data and number of neighbors
         """
         data = self.detector.encode(self.training_data)
         distances = []
         print(data.shape[0])
-        for i in range(data.shape[0] // P):
-            distance_mat = pairwise.pairwise_distances(data[i * P:(i + 1) * P,:], Y=data)
+        for i in range(data.shape[0] // pair_count):
+            distance_mat = pairwise.pairwise_distances(data[i * pair_count:(i + 1) * pair_count,:], Y=data)
             distance_mat = np.sort(distance_mat, axis=-1)
-            distance_mat_K = distance_mat[:,:self.K]
-            distances.append(distance_mat_K)
+            distance_mat_k = distance_mat[:,:self.k]
+            distances.append(distance_mat_k)
         distance_matrix = np.concatenate(distances, axis=0)
 
-        start = 0 if self.up_to_K else self.K
+        start = 0 if self.up_to_k else self.k
 
-        THRESHOLDS = []
-        K_S = []
-        for k in range(start, self.K + 1):
+        thresholds = []
+        k_count = []
+        for k in range(start, self.k + 1):
             dist_to_k_neighbors = distance_matrix[:,:k + 1]
             avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
             threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
 
-            K_S.append(k)
-            THRESHOLDS.append(threshold)
+            k_count.append(k)
+            thresholds.append(threshold)
 
-        return K_S, THRESHOLDS
+        return k_count, thresholds
