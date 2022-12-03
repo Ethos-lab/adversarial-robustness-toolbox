@@ -76,10 +76,10 @@ class BlacklightDetector(Detector):
         self.num_rounds = num_rounds
         self.step_size = step_size
         self.workers = workers
-        self.hash_dict = {}
-        self.output = {}
+        self.hash_dict = {}  # type: ignore
+        self.output = {}  # type: ignore
         self.input_idx = 0
-        self.pool = Pool(processes=workers)
+        self.pool = Pool(processes=workers)  # pylint: disable=R1732
         if salt is not None:
             self.salt = salt
         else:
@@ -155,4 +155,4 @@ class BlacklightDetector(Detector):
                 detected_output.append(1)
             else:
                 detected_output.append(0)
-        return detected_output
+        return np.asarray(detected_output)

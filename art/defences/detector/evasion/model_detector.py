@@ -64,7 +64,7 @@ class ModelDetector(Detector):
         """
         raise NotImplementedError
 
-    def loss_gradient(self):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

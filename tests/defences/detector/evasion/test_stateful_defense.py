@@ -46,8 +46,15 @@ def cifar10_encoder(encode_dim=256):
     """
     Create cifar10 encoder model
     """
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Activation
+    from tensorflow.keras.models import Sequential  # pylint: disable=E0611
+    from tensorflow.keras.layers import (
+        Dense,
+        Dropout,
+        Flatten,
+        Conv2D,
+        MaxPooling2D,
+        Activation,
+    )  # pylint: disable=E0611
 
     model = Sequential()
 

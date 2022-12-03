@@ -40,4 +40,4 @@ class SimilarityDetector:
         if weights_path is not None:
             encoder.load_weights(weights_path, by_name=True)
         self.encoder = encoder
-        self.encode = lambda x: encoder.predict(x)
+        self.encode = lambda x: encoder.predict(x)  # pylint: disable=W0108

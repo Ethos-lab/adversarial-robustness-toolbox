@@ -125,7 +125,7 @@ class BinaryInputDetector(ModelDetector):
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
-        return self._channels_first
+        return self.detector.channels_first
 
     def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
@@ -290,7 +290,7 @@ class BinaryActivationDetector(ModelDetector):
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
-        return self._channels_first
+        return self.detector.channels_first
 
     @property
     def layer_names(self) -> List[str]:
