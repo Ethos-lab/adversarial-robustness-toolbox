@@ -30,7 +30,6 @@ class ModelDetector(Detector):
     Model Detector class providing common abstraction to the whitebox detector implementations in ART.
     """
 
-
     def __init__(self, model, detector):
         """
         Create a `ModelDetector` instance which is used to build whitebox detector implementations
@@ -52,7 +51,6 @@ class ModelDetector(Detector):
         """
         raise NotImplementedError
 
-
     def fit(self):
         """
         Fit the detector using training data.
@@ -65,7 +63,6 @@ class ModelDetector(Detector):
         """
         raise NotImplementedError
 
-
     def loss_gradient(self):
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -77,4 +74,3 @@ class ModelDetector(Detector):
         :return: Array of gradients of the same shape as `x`.
         """
         raise NotImplementedError
-

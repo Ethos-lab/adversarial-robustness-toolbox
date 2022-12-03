@@ -24,11 +24,12 @@ import numpy as np
 
 from abc import ABC
 
+
 class Detector(ABC):
     """
     Detector class providing common interface to the detector implementations in ART.
     """
-    
+
     def __init__(
         self,
         *args,

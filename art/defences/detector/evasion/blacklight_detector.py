@@ -41,8 +41,8 @@ def apply_hash(arguments):
 
 class BlacklightDetector(Detector):
     """
-    Implementation of the paper "Blacklight: Scalable Defense for Neural Networks against Query-Based Black-Box Attacks",
-    at USENIX Security 2022.
+    Implementation of the paper "Blacklight: Scalable Defense for Neural Networks
+    against Query-Based Black-Box Attacks" at USENIX Security 2022.
     Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
@@ -66,35 +66,33 @@ class BlacklightDetector(Detector):
         :param num_rounds: Number of rounds for computing the hashes
         :param workers: Size of worker threads pools to run the detector
         """
-        
-        self.input_shape=input_shape
-        self.window_size=window_size
-        self.num_hashes_keep=num_hashes_keep
-        self.num_rounds=num_rounds
-        self.step_size=step_size
-        self.workers=workers
-        self.hash_dict={}
-        self.output={}
-        self.input_idx=0
-        self.pool=Pool(processes=workers)
-        if(salt != None):
+
+        self.input_shape = input_shape
+        self.window_size = window_size
+        self.num_hashes_keep = num_hashes_keep
+        self.num_rounds = num_rounds
+        self.step_size = step_size
+        self.workers = workers
+        self.hash_dict = {}
+        self.output = {}
+        self.input_idx = 0
+        self.pool = Pool(processes=workers)
+        if salt is not None:
             self.salt = salt
         else:
             self.salt = np.random.rand(*self.input_shape) * 255.
-
 
     def preprocess(self, array, num_rounds=1, normalized=True):
         """
         Preprocessing the array of inputs
         """
-        if(normalized): # input image normalized to [0,1]
+        if(normalized):  # input image normalized to [0,1]
             array = np.array(array) * 255.
         array = (array + self.salt) % 255.
         array = array.reshape(-1)
         array = np.around(array / num_rounds, decimals=0) * num_rounds
         array = array.astype(np.int16)
         return array
-
 
     def hash_image(self, img, preprocess=True):
         """
@@ -112,7 +110,6 @@ class BlacklightDetector(Detector):
         hash_list.sort(reverse=True)
         return hash_list
 
-
     def check_image(self, hashes):
         """
         Check if the image is already in the hashes computed, if yes, return the count
@@ -127,7 +124,6 @@ class BlacklightDetector(Detector):
         cnt = sets.most_common(1)[0][1]
         return cnt
 
-
     def detect_image(self, img):
         """
         Detect and find the number of occurrences for an input image
@@ -141,10 +137,9 @@ class BlacklightDetector(Detector):
                 self.hash_dict[el].append(self.input_idx)
         return cnt
 
-
     def detect(self, input_queries: np.ndarray, threshold: int, **kwargs) -> np.ndarray:
         """
-        Return an array of detections on the input queries. This returns True(1) if the 
+        Return an array of detections on the input queries. This returns True(1) if the
         count is greater than the threshold, else return False(0)
         """
         detected_output = []

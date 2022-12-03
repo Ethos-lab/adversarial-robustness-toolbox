@@ -37,14 +37,15 @@ def get_cifar10_data():
     """
     NB_TEST = 100
     (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
-    # x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
     y_test = np.argmax(y_test, axis=1)
     return x_test, y_test
 
 
 def cifar10_encoder(encode_dim=256):
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D, Activation, InputLayer
+    from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D,
+    MaxPooling2D, GlobalAveragePooling2D, Activation, InputLayer
 
     model = Sequential()
 
@@ -83,10 +84,17 @@ def test_blacklight_detector_tensorflow_queries_returns_nonempty(get_cifar10_dat
 
     cifar10_model = cifar10_encoder()
     encoder = SimilarityDetector(model=cifar10_model)
-    stateful_detector = StatefulDefense(model=cifar10_model, detector=encoder, K=50, threshold=None, training_data=x_test, chunk_size=1000)
+    stateful_detector = StatefulDefense(
+        model=cifar10_model,
+        detector=encoder,
+        K=50,
+        threshold=None,
+        training_data=x_test,
+        chunk_size=1000
+    )
     detections = stateful_detector.detect(queries)
 
-    assert detections #Non empty detections
+    assert detections  # Non empty detections
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
@@ -100,7 +108,13 @@ def test_blacklight_detector_tensorflow_queries_returns_boolean_values(get_cifar
 
     cifar10_model = cifar10_encoder()
     encoder = SimilarityDetector(model=cifar10_model)
-    stateful_detector = StatefulDefense(model=cifar10_model, detector=encoder, K=50, threshold=None, training_data=x_test, chunk_size=1000)
+    stateful_detector = StatefulDefense(
+        model=cifar10_model,
+        detector=encoder,
+        K=50, threshold=None,
+        training_data=x_test,
+        chunk_size=1000
+    )
     detections = stateful_detector.detect(queries)
 
     assert all(detection in {0,1} for detection in set(detections))

@@ -26,12 +26,12 @@ from art.defences.detector.evasion.model_detector import ModelDetector
 import sklearn.metrics.pairwise as pairwise
 from collections import OrderedDict
 
+
 class StatefulDefense(ModelDetector):
     """
     Implementation of the paper titled "Stateful Detection of Black-Box Adversarial Attacks"
     | Paper link: https://arxiv.org/pdf/1907.05587.pdf
     """
-
 
     def __init__(self, model, detector, K, threshold=None, training_data=None, chunk_size=1000, up_to_K=False):
         """
@@ -49,7 +49,7 @@ class StatefulDefense(ModelDetector):
         self.threshold = threshold
         self.training_data = training_data
         self.up_to_K = up_to_K
-        
+
         super().__init__(model, detector)
 
         if self.threshold is None and self.training_data is None:
@@ -67,11 +67,10 @@ class StatefulDefense(ModelDetector):
         self.memory = []
         self.chunk_size = chunk_size
 
-        self.history = [] # Tracks number of queries (t) when attack was detected
+        self.history = []  # Tracks number of queries (t) when attack was detected
         self.history_by_attack = []
-        self.detected_dists = [] # Tracks knn-dist that was detected
+        self.detected_dists = []  # Tracks knn-dist that was detected
         self.detections = []
-
 
     def detect(self, queries: np.ndarray) -> np.ndarray:
         """
@@ -81,7 +80,6 @@ class StatefulDefense(ModelDetector):
         self.process(queries)
         return self.detections
 
-
     def process(self, queries):
         """
         Encode the input queries and process each of them
@@ -89,7 +87,6 @@ class StatefulDefense(ModelDetector):
         queries = self.detector.encode(queries)
         for query in queries:
             self.process_query(query)
-
 
     def process_query(self, query):
         if len(self.memory) == 0 and len(self.buffer) < self.K:
@@ -130,14 +127,12 @@ class StatefulDefense(ModelDetector):
         else:
             self.detections.append(0)
 
-
     def clear_memory(self):
         """
         Emptying out the memory buffer
         """
         self.buffer = []
         self.memory = []
-
 
     def get_detections(self):
         history = self.history
@@ -146,8 +141,7 @@ class StatefulDefense(ModelDetector):
             epochs.append(history[i + 1] - history[i])
         return epochs
 
-
-    def calculate_thresholds(self, P = 1000):
+    def calculate_thresholds(self, P=1000):
         """
         Compute thresholds for the given training data and number of neighbors
         """
@@ -155,21 +149,21 @@ class StatefulDefense(ModelDetector):
         distances = []
         print(data.shape[0])
         for i in range(data.shape[0] // P):
-            distance_mat = pairwise.pairwise_distances(data[i * P:(i+1) * P,:], Y=data)
+            distance_mat = pairwise.pairwise_distances(data[i * P:(i + 1) * P,:], Y=data)
             distance_mat = np.sort(distance_mat, axis=-1)
             distance_mat_K = distance_mat[:,:self.K]
             distances.append(distance_mat_K)
         distance_matrix = np.concatenate(distances, axis=0)
-        
+
         start = 0 if self.up_to_K else self.K
 
         THRESHOLDS = []
         K_S = []
         for k in range(start, self.K + 1):
-            dist_to_k_neighbors = distance_matrix[:,:k+1]
+            dist_to_k_neighbors = distance_matrix[:,:k + 1]
             avg_dist_to_k_neighbors = dist_to_k_neighbors.mean(axis=-1)
             threshold = np.percentile(avg_dist_to_k_neighbors, 0.1)
-            
+
             K_S.append(k)
             THRESHOLDS.append(threshold)
 

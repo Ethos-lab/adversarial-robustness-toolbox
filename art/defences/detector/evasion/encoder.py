@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
+
 class L2Detector():
     def __init__(self):
         self.encode = lambda x : x.reshape((x.shape[0], -1))
