@@ -31,7 +31,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.smoothmix.smoothmix import SmoothMixMixin
+from art.estimators.certification.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -44,11 +44,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
+class PyTorchSmoothMix(RandomizedSmoothingMixin, PyTorchClassifier):
     """
     Implementation of SmoothMix training, as introduced in Jeong et al. (2021)
 
-    | Paper link: https://arxiv.org/pdf/2111.09277.pdf
+    | Paper link: https://arxiv.org/abs/2111.09277
     """
 
     estimator_params = PyTorchClassifier.estimator_params + [
@@ -96,7 +96,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
-        **kwargs,
     ) -> None:
         """
         Create a SmoothMix classifier.
@@ -150,19 +149,18 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            num_noise_vec=num_noise_vec,
-            epsilon=epsilon,
-            num_steps=num_steps,
-            warmup=warmup,
-            lbd=lbd,
-            gamma=gamma,
-            gauss_num=gauss_num,
-            eta=eta,
-            mix_step=mix_step,
-            maxnorm_s=maxnorm_s,
-            maxnorm=maxnorm,
-            **kwargs,
         )
+        self.num_noise_vec = num_noise_vec
+        self.epsilon = epsilon
+        self.num_steps = num_steps
+        self.warmup = warmup
+        self.lbd = lbd
+        self.gamma = gamma
+        self.gauss_num = gauss_num
+        self.eta = eta
+        self.mix_step = mix_step
+        self.maxnorm_s = maxnorm_s
+        self.maxnorm = maxnorm
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
@@ -291,7 +289,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return SmoothMixMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
+        return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
 
     def loss_gradient(  # type: ignore
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs

@@ -22,7 +22,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_array_less
 
-from art.estimators.certification.smoothmix import PyTorchSmoothMix
+from art.estimators.certification.randomized_smoothing import PyTorchSmoothMix
 from tests.utils import ARTTestException, get_image_classifier_pt, get_cifar10_image_classifier_pt
 
 logger = logging.getLogger(__name__)
