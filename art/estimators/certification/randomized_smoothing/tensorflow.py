@@ -29,15 +29,9 @@ import warnings
 from tqdm import tqdm
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
-from art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv import (
-    fit_tensorflow_smoothadv,
-)
-from art.estimators.certification.randomized_smoothing.macer.train_macer import fit_tensorflow_macer
-from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -75,21 +69,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
-        num_noise_vec: int = 1,
-        train_multi_noise: bool = False,
-        attack_type: str = "PGD",
-        no_grad_attack: bool = False,
-        epsilon: float = 64.0,
-        num_steps: int = 10,
-        warmup: int = 1,
-        lbd: float = 12.0,
-        gamma: float = 8.0,
-        beta: float = 16.0,
-        gauss_num: int = 16,
-        optimizer: Optional["tf.keras.optimizers"] = None,  # type: ignore
-        scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None,  # type: ignore
-        estimator: "TensorFlowV2Classifier" = None,  # type: ignore
-        **kwargs
     ):
         """
         Create a randomized smoothing classifier.
@@ -135,31 +114,13 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            num_noise_vec=num_noise_vec,
-            train_multi_noise=train_multi_noise,
-            attack_type=attack_type,
-            no_grad_attack=no_grad_attack,
-            epsilon=epsilon,
-            num_steps=num_steps,
-            warmup=warmup,
-            lbd=lbd,
-            gamma=gamma,
-            beta=beta,
-            gauss_num=gauss_num,
-            **kwargs
         )
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.estimator = estimator
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
-        x_rs, _ = g_a(x)
-        x_rs = x_rs.astype(ART_NUMPY_DTYPE)
-        return TensorFlowV2Classifier.fit(self, x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
@@ -175,15 +136,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         """
         import tensorflow as tf
 
-        if "train_method" in kwargs:
-            if kwargs.get("train_method") == "macer":
-                return fit_tensorflow_macer(self, x, y, batch_size, nb_epochs)
-            if kwargs.get("train_method") == "smoothadv":
-                return fit_tensorflow_smoothadv(self, x, y, batch_size, nb_epochs)
-
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been defined."
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
@@ -202,7 +157,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 self._train_step(self.model, images, labels)
-        return None
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
