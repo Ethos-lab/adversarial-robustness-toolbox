@@ -33,7 +33,19 @@ Adversarial Training Fast is Better than Free - PyTorch
    :special-members:
 
 Adversarial Training Certified - PyTorch
--------------------------------------------------------
+----------------------------------------
 .. autoclass:: AdversarialTrainerCertifiedPytorch
+   :members:
+   :special-members:
+
+Adversarial Training Certified Interval Bound Propagation - PyTorch
+-------------------------------------------------------------------
+.. autoclass:: AdversarialTrainerCertifiedIBPPyTorch
+   :members:
+   :special-members:
+
+DP - InstaHide Training
+-----------------------
+.. autoclass:: DPInstaHideTrainer
    :members:
    :special-members:

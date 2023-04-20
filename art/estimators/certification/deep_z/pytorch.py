@@ -21,7 +21,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
 
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Callable, Any, TYPE_CHECKING
 
 import logging
 import math
@@ -55,6 +55,7 @@ class ConvertedModel(torch.nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
+        self.reshape_op_num = -1
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -73,7 +74,6 @@ class ConvertedModel(torch.nn.Module):
 
         self.ops = torch.nn.ModuleList()
         for module in modules:
-            print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
                 zono_conv = ZonoConv(
                     in_channels=module.in_channels,
@@ -202,7 +202,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
-        concrete_to_zonotope: Optional[Any] = None,
+        concrete_to_zonotope: Optional[Callable] = None,
     ):
         """
         Create a certifier based on the zonotope domain.

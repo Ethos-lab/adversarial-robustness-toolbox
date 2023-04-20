@@ -98,15 +98,22 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
+    from art.estimators.certification.interval import PyTorchIBPClassifier
     from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+    from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
+    from art.estimators.keras import KerasEstimator
     from art.estimators.regression.scikitlearn import ScikitlearnRegressor
+    from art.estimators.regression.pytorch import PyTorchRegressor
+    from art.estimators.regression.keras import KerasRegressor
+    from art.estimators.regression.blackbox import BlackBoxRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -190,13 +197,17 @@ if TYPE_CHECKING:
 
     GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
 
-    REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
+    REGRESSOR_TYPE = Union[  # pylint: disable=C0103
+        ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor
+    ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
+        PyTorchYolo,
         TensorFlowFasterRCNN,
+        TensorFlowV2FasterRCNN,
     ]
 
     SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
@@ -210,20 +221,46 @@ if TYPE_CHECKING:
         PyTorchEstimator,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
+        PyTorchYolo,
+        PyTorchRegressor,
+    ]
+
+    KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        KerasClassifier,
+        KerasEstimator,
+        KerasRegressor,
     ]
 
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
+        TensorFlowV2FasterRCNN,
     ]
 
     ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
-        CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
+        CLASSIFIER_TYPE,
+        REGRESSOR_TYPE,
+        OBJECT_DETECTOR_TYPE,
+        SPEECH_RECOGNIZER_TYPE,
+        PYTORCH_ESTIMATOR_TYPE,
+        KERAS_ESTIMATOR_TYPE,
+        TENSORFLOWV2_ESTIMATOR_TYPE,
+    ]
+
+    CLONABLE = Union[  # pylint: disable=C0103
+        ScikitlearnClassifier,
+        PyTorchClassifier,
+        TensorFlowV2Classifier,
+        KerasEstimator,
+        PyTorchRegressor,
+        ScikitlearnRegressor,
+        XGBoostClassifier,
     ]
 
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
 
     CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
+    IBP_CERTIFIER_TYPE = Union[PyTorchIBPClassifier]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -718,7 +755,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
-    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :param labels: An array of floating point labels of shape `(nb_samples,)`
     :param nb_classes: The number of classes (possible labels)
     :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
@@ -770,7 +807,7 @@ def check_and_transform_label_format(
             labels_return = np.expand_dims(labels_return, axis=1)
     elif len(labels.shape) == 2 and labels.shape[1] == 1:
         if nb_classes is None:
-            nb_classes = np.max(labels) + 1
+            nb_classes = int(np.max(labels) + 1)
         if nb_classes > 2:  # multi-class, index labels
             if return_one_hot:
                 labels_return = to_categorical(labels, nb_classes)
@@ -892,25 +929,19 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
              For a multi-column feature, a list of lists, where each internal list represents a column and the values
              represent the possible values for that column (in increasing order).
     """
-    values = None
+    values = []
     if single_index_feature:
         values = np.unique(x).tolist()
     else:
         for column in x.T:
-            column_values = np.unique(column)
-            if values is None:
-                values = column_values
-            else:
-                values = np.vstack((values, column_values))
-        if values is not None:
-            values = values.tolist()
+            values.append(np.unique(column).tolist())
     return values
 
 
 def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
     """
-    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. Otherwise,
-    returns the same value (integer or slice) as passed.
+    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. In case
+    of a slice with missing params, tries to fill them. Otherwise, returns the same value (integer or slice) as passed.
 
     :param feature: The index or slice representing a feature to attack
     :return: An integer representing a single column index or a slice representing a multi-column index
@@ -925,10 +956,24 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
         start = 0
     if step is None:
         step = 1
-    if feature.stop is not None and ((stop - start) // step) == 1:
+    if stop is not None and ((stop - start) // step) == 1:
         return start
 
-    return feature
+    return slice(start, stop, step)
+
+
+def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: Optional[List[int]]):
+    """
+    Removes the attacked feature from the list of non-numeric features to encode.
+
+    :param attack_feature: The index or slice representing a feature to attack
+    :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
+                                    (i.e., strings)
+    :return:
+    """
+    if non_numerical_features is not None and isinstance(attack_feature, int):
+        if attack_feature in non_numerical_features:
+            non_numerical_features.remove(attack_feature)
 
 
 def compute_success_array(
@@ -1072,8 +1117,6 @@ def load_cifar10(
 
     fpath = os.path.join(path, "test_batch")
     x_test, y_test = load_batch(fpath)
-    y_train = np.reshape(y_train, (len(y_train), 1))
-    y_test = np.reshape(y_test, (len(y_test), 1))
 
     # Set channels last
     x_train = x_train.transpose((0, 2, 3, 1))
